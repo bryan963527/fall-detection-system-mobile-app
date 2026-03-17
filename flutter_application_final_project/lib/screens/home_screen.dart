@@ -7,6 +7,8 @@ import '../widgets/recent_activity.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/top_bar.dart';
 import 'history_screen.dart';
+import 'profile_screen.dart';
+import 'relatives_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -51,13 +53,13 @@ class _HomeScreenState extends State<HomeScreen> {
         );
         break;
       case 2: // Relatives
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Relatives screen coming soon')),
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const RelativesScreen()),
         );
         break;
       case 3: // Profile
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile screen coming soon')),
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const ProfileScreen()),
         );
         break;
     }

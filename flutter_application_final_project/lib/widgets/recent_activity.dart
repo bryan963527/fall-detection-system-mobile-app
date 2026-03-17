@@ -21,7 +21,7 @@ class RecentActivityCard extends StatelessWidget {
         border: Border(
           left: BorderSide(
             color: AppColors.safeGreen,
-            width: 4,
+            width: 3,
           ),
         ),
       ),
@@ -30,7 +30,7 @@ class RecentActivityCard extends StatelessWidget {
           Icon(
             Icons.directions_run,
             color: AppColors.safeGreen,
-            size: 24,
+            size: 20,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -40,7 +40,7 @@ class RecentActivityCard extends StatelessWidget {
                 Text(
                   activity.activity,
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textDark,
                   ),
@@ -49,7 +49,7 @@ class RecentActivityCard extends StatelessWidget {
                 Text(
                   activity.time,
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
                     color: AppColors.textLight,
                   ),
                 ),
@@ -57,15 +57,15 @@ class RecentActivityCard extends StatelessWidget {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
             decoration: BoxDecoration(
               color: Color(0xFFE8F5E9),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(3),
             ),
             child: Text(
               activity.status,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: AppColors.safeGreen,
               ),

@@ -5,6 +5,8 @@ import '../widgets/events_table.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/weekly_activity_chart.dart';
 import 'home_screen.dart';
+import 'profile_screen.dart';
+import 'relatives_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -212,13 +214,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
       case 1:
         break;
       case 2:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Relatives screen coming soon')),
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const RelativesScreen()),
         );
         break;
       case 3:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile screen coming soon')),
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const ProfileScreen()),
         );
         break;
     }

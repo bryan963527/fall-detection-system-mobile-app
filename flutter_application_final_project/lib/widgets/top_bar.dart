@@ -8,35 +8,28 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       backgroundColor: Colors.white,
-      elevation: 1,
+      elevation: 0,
       toolbarHeight: 70,
-      title: const Row(
-        children: [
-          Text(
-            'Dashboard',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textDark,
-            ),
-          ),
-        ],
+      title: const Text(
+        'Dashboard',
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: AppColors.textDark,
+        ),
       ),
       actions: [
         Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_none, color: AppColors.textMedium),
-                onPressed: () {},
+          padding: const EdgeInsets.only(right: 24),
+          child: Center(
+            child: Text(
+              'Last updated: Just now',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.textMedium,
+                fontWeight: FontWeight.w500,
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.settings, color: AppColors.textMedium),
-                onPressed: () {},
-              ),
-            ],
+            ),
           ),
         ),
       ],
