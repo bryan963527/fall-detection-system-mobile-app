@@ -5,10 +5,7 @@ import '../models/event_model.dart';
 class WeeklyActivityChart extends StatelessWidget {
   final List<WeeklyActivityData> data;
 
-  const WeeklyActivityChart({
-    Key? key,
-    required this.data,
-  }) : super(key: key);
+  const WeeklyActivityChart({super.key, required this.data});
 
   @override
   Widget build(BuildContext context) {
@@ -68,11 +65,11 @@ class ChartPainter extends CustomPainter {
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke;
 
-    final textPaint = TextPainter(
-      textDirection: TextDirection.ltr,
-    );
+    final textPaint = TextPainter(textDirection: TextDirection.ltr);
 
-    final maxValue = data.fold<int>(0, (max, item) => item.value > max ? item.value : max).toDouble();
+    final maxValue = data
+        .fold<int>(0, (max, item) => item.value > max ? item.value : max)
+        .toDouble();
     final minValue = 0.0;
     final rangeValue = maxValue - minValue;
 
@@ -84,20 +81,20 @@ class ChartPainter extends CustomPainter {
 
     final yLabels = [40, 30, 20, 10, 0];
     for (int i = 0; i < yLabels.length; i++) {
-      final y = height - bottomPadding - (yLabels[i] / 40) * (height - bottomPadding - topPadding);
-      
+      final y =
+          height -
+          bottomPadding -
+          (yLabels[i] / 40) * (height - bottomPadding - topPadding);
+
       textPaint.text = TextSpan(
         text: '${yLabels[i]}',
-        style: const TextStyle(
-          color: AppColors.textLight,
-          fontSize: 11,
-        ),
+        style: const TextStyle(color: AppColors.textLight, fontSize: 11),
       );
       textPaint.layout();
 
-      final textX = -textPaint.width - 6; 
-      final textY = y - textPaint.height / 2; 
-      
+      final textX = -textPaint.width - 6;
+      final textY = y - textPaint.height / 2;
+
       textPaint.paint(canvas, Offset(textX, textY));
 
       if (i > 0) {
@@ -116,7 +113,10 @@ class ChartPainter extends CustomPainter {
     for (int i = 0; i < data.length; i++) {
       final x = i * pointSpacing;
       final normalizedValue = (data[i].value - minValue) / rangeValue;
-      final y = height - bottomPadding - normalizedValue * (height - bottomPadding - topPadding);
+      final y =
+          height -
+          bottomPadding -
+          normalizedValue * (height - bottomPadding - topPadding);
       points.add(Offset(x, y));
     }
 
@@ -128,7 +128,12 @@ class ChartPainter extends CustomPainter {
         path.lineTo(points[i].dx, points[i].dy);
       } else {
         final controlX = (points[i - 1].dx + points[i].dx) / 2;
-        path.quadraticBezierTo(controlX, points[i - 1].dy, points[i].dx, points[i].dy);
+        path.quadraticBezierTo(
+          controlX,
+          points[i - 1].dy,
+          points[i].dx,
+          points[i].dy,
+        );
       }
     }
     path.lineTo(points.last.dx, height - bottomPadding);
@@ -140,17 +145,18 @@ class ChartPainter extends CustomPainter {
     linePath.moveTo(points[0].dx, points[0].dy);
     for (int i = 1; i < points.length; i++) {
       final controlX = (points[i - 1].dx + points[i].dx) / 2;
-      linePath.quadraticBezierTo(controlX, points[i - 1].dy, points[i].dx, points[i].dy);
+      linePath.quadraticBezierTo(
+        controlX,
+        points[i - 1].dy,
+        points[i].dx,
+        points[i].dy,
+      );
     }
     canvas.drawPath(linePath, linePaint);
 
     // Draw points
     for (var point in points) {
-      canvas.drawCircle(
-        point,
-        3,
-        Paint()..color = AppColors.primary,
-      );
+      canvas.drawCircle(point, 3, Paint()..color = AppColors.primary);
     }
 
     // Draw X-axis labels
@@ -159,16 +165,10 @@ class ChartPainter extends CustomPainter {
       final x = i * pointSpacing;
       textPaint.text = TextSpan(
         text: days[i],
-        style: const TextStyle(
-          color: AppColors.textLight,
-          fontSize: 11,
-        ),
+        style: const TextStyle(color: AppColors.textLight, fontSize: 11),
       );
       textPaint.layout();
-      textPaint.paint(
-        canvas,
-        Offset(x - textPaint.width / 2, height - 8),
-      );
+      textPaint.paint(canvas, Offset(x - textPaint.width / 2, height - 8));
     }
   }
 

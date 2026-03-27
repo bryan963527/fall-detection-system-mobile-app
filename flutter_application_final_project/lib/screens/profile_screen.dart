@@ -3,9 +3,11 @@ import '../constants/app_colors.dart';
 import '../widgets/top_bar.dart';
 import '../widgets/sidebar.dart';
 import 'relatives_screen.dart';
+import 'home_screen.dart';
+import 'history_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -24,25 +26,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // Navigate to different screens based on index
     switch (index) {
       case 0: // Dashboard
-        Navigator.of(context).pushReplacementNamed('/');
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const HomeScreen()), // ✅ fix
+        );
         break;
       case 1: // History
-        Navigator.of(context).pushReplacementNamed('/history');
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const HistoryScreen(),
+          ), // ✅ fix
+        );
         break;
       case 2: // Relatives
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const RelativesScreen()),
         );
         break;
-      case 3: // Profile - Already on profile screen
+      case 3: // Profile - already here
         break;
     }
   }
 
   void _onSignOut() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Signing out...')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Signing out...')));
   }
 
   @override
@@ -107,13 +115,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: _buildDeviceStatus(),
-                              ),
+                              Expanded(child: _buildDeviceStatus()),
                               const SizedBox(width: 20),
-                              Expanded(
-                                child: _buildApplicationSettings(),
-                              ),
+                              Expanded(child: _buildApplicationSettings()),
                             ],
                           ),
                         ),
@@ -155,11 +159,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: Color(0xFFE0E7FF),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.person,
-              color: AppColors.primary,
-              size: 40,
-            ),
+            child: Icon(Icons.person, color: AppColors.primary, size: 40),
           ),
           const SizedBox(width: 20),
           // User Info
@@ -204,11 +204,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: AppColors.safeGreen,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.check,
-              color: Colors.white,
-              size: 22,
-            ),
+            child: const Icon(Icons.check, color: Colors.white, size: 22),
           ),
         ],
       ),
@@ -221,10 +217,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
       ),
       child: Text(
         label,
@@ -257,11 +250,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // Header
           Row(
             children: [
-              Icon(
-                Icons.smartphone,
-                color: AppColors.primary,
-                size: 20,
-              ),
+              Icon(Icons.smartphone, color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
               const Text(
                 'Device Status',
@@ -290,11 +279,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.battery_full,
-                  color: AppColors.safeGreen,
-                  size: 18,
-                ),
+                Icon(Icons.battery_full, color: AppColors.safeGreen, size: 18),
                 const SizedBox(width: 8),
                 Text(
                   'Battery Level',
@@ -327,10 +312,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textMedium,
-          ),
+          style: const TextStyle(fontSize: 13, color: AppColors.textMedium),
         ),
         Text(
           value,
@@ -364,11 +346,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // Header
           Row(
             children: [
-              Icon(
-                Icons.settings,
-                color: AppColors.primary,
-                size: 20,
-              ),
+              Icon(Icons.settings, color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
               const Text(
                 'Application Settings',
@@ -399,10 +377,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 4),
                   const Text(
                     'Receive alerts on your phone',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textLight,
-                    ),
+                    style: TextStyle(fontSize: 12, color: AppColors.textLight),
                   ),
                 ],
               ),
@@ -413,7 +388,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _pushNotificationsEnabled = value;
                   });
                 },
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
               ),
             ],
           ),
@@ -443,14 +418,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 4),
               const Text(
                 'Adjust detection threshold',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textLight,
-                ),
+                style: TextStyle(fontSize: 12, color: AppColors.textLight),
               ),
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: AppColors.textLight.withOpacity(0.3),

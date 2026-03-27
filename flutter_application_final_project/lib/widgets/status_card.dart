@@ -8,12 +8,12 @@ class StatusCard extends StatelessWidget {
   final String signal;
 
   const StatusCard({
-    Key? key,
+    super.key,
     required this.status,
     required this.message,
     required this.battery,
     required this.signal,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -77,13 +77,16 @@ class StatusCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    '$battery',
+                    battery,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 10,
@@ -113,7 +116,10 @@ class StatusCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(4),

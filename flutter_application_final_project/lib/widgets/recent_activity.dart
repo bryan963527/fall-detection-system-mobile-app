@@ -5,10 +5,7 @@ import '../models/activity_model.dart';
 class RecentActivityCard extends StatelessWidget {
   final ActivityLog activity;
 
-  const RecentActivityCard({
-    Key? key,
-    required this.activity,
-  }) : super(key: key);
+  const RecentActivityCard({super.key, required this.activity});
 
   @override
   Widget build(BuildContext context) {
@@ -18,20 +15,11 @@ class RecentActivityCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border(
-          left: BorderSide(
-            color: AppColors.safeGreen,
-            width: 3,
-          ),
-        ),
+        border: Border(left: BorderSide(color: AppColors.safeGreen, width: 3)),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.directions_run,
-            color: AppColors.safeGreen,
-            size: 20,
-          ),
+          Icon(Icons.directions_run, color: AppColors.safeGreen, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -80,10 +68,7 @@ class RecentActivityCard extends StatelessWidget {
 class RecentActivitySection extends StatelessWidget {
   final List<ActivityLog> activities;
 
-  const RecentActivitySection({
-    Key? key,
-    required this.activities,
-  }) : super(key: key);
+  const RecentActivitySection({super.key, required this.activities});
 
   @override
   Widget build(BuildContext context) {

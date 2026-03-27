@@ -18,10 +18,10 @@ class Sidebar extends StatefulWidget {
   final Function(int) onItemSelected;
 
   const Sidebar({
-    Key? key,
+    super.key,
     required this.selectedIndex,
     required this.onItemSelected,
-  }) : super(key: key);
+  });
 
   @override
   State<Sidebar> createState() => _SidebarState();
@@ -91,7 +91,10 @@ class _SidebarState extends State<Sidebar> {
                 final isSelected = widget.selectedIndex == index;
 
                 return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   decoration: isSelected
                       ? BoxDecoration(
                           color: AppColors.sidebarActive.withOpacity(0.1),
@@ -110,7 +113,9 @@ class _SidebarState extends State<Sidebar> {
                       item.label,
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                         color: isSelected
                             ? AppColors.sidebarActive
                             : AppColors.textMedium,

@@ -6,7 +6,7 @@ import '../widgets/sidebar.dart';
 import 'profile_screen.dart';
 
 class RelativesScreen extends StatefulWidget {
-  const RelativesScreen({Key? key}) : super(key: key);
+  const RelativesScreen({super.key});
 
   @override
   State<RelativesScreen> createState() => _RelativesScreenState();
@@ -62,66 +62,69 @@ class _RelativesScreenState extends State<RelativesScreen> {
   }
 
   void _addContact() {
-  final nameController = TextEditingController();
-  final relationController = TextEditingController();
-  final phoneController = TextEditingController();
+    final nameController = TextEditingController();
+    final relationController = TextEditingController();
+    final phoneController = TextEditingController();
 
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Add New Contact'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Full Name'),
-            ),
-            TextField(
-              controller: relationController,
-              decoration: const InputDecoration(labelText: 'Relationship (e.g. Son)'),
-            ),
-            TextField(
-              controller: phoneController,
-              decoration: const InputDecoration(labelText: 'Phone Number'),
-              keyboardType: TextInputType.phone,
-            ),
-          ],
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add New Contact'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Full Name'),
+              ),
+              TextField(
+                controller: relationController,
+                decoration: const InputDecoration(
+                  labelText: 'Relationship (e.g. Son)',
+                ),
+              ),
+              TextField(
+                controller: phoneController,
+                decoration: const InputDecoration(labelText: 'Phone Number'),
+                keyboardType: TextInputType.phone,
+              ),
+            ],
+          ),
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-          onPressed: () {
-            if (nameController.text.isNotEmpty && phoneController.text.isNotEmpty) {
-              setState(() {
-                contacts.add(
-                  Contact(
-                    id: DateTime.now().toString(), // Quick unique ID
-                    name: nameController.text,
-                    relationship: relationController.text,
-                    phoneNumber: phoneController.text,
-                    emergencyNotificationsEnabled: true,
-                  ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () {
+              if (nameController.text.isNotEmpty &&
+                  phoneController.text.isNotEmpty) {
+                setState(() {
+                  contacts.add(
+                    Contact(
+                      id: DateTime.now().toString(), // Quick unique ID
+                      name: nameController.text,
+                      relationship: relationController.text,
+                      phoneNumber: phoneController.text,
+                      emergencyNotificationsEnabled: true,
+                    ),
+                  );
+                });
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Contact Added Successfully')),
                 );
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Contact Added Successfully')),
-              );
-            }
-          },
-          child: const Text('Save', style: TextStyle(color: Colors.white)),
-        ),
-      ],
-    ),
-  );
-}
+              }
+            },
+            child: const Text('Save', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _toggleNotification(int index) {
     setState(() {
@@ -136,9 +139,9 @@ class _RelativesScreenState extends State<RelativesScreen> {
     setState(() {
       contacts.removeAt(index);
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Contact deleted')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Contact deleted')));
   }
 
   @override
@@ -231,10 +234,7 @@ class _RelativesScreenState extends State<RelativesScreen> {
               const SizedBox(height: 4),
               Text(
                 'Manage who gets notified in case of an emergency.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textMedium,
-                ),
+                style: TextStyle(fontSize: 14, color: AppColors.textMedium),
               ),
             ],
           ),
@@ -248,11 +248,7 @@ class _RelativesScreenState extends State<RelativesScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.add,
-                    color: Colors.white,
-                    size: 18,
-                  ),
+                  const Icon(Icons.add, color: Colors.white, size: 18),
                   const SizedBox(width: 6),
                   const Text(
                     'Add Contact',
@@ -280,8 +276,8 @@ class _RelativesScreenState extends State<RelativesScreen> {
           int columns = constraints.maxWidth > 1200
               ? 3
               : constraints.maxWidth > 600
-                  ? 2
-                  : 1;
+              ? 2
+              : 1;
 
           return GridView.builder(
             shrinkWrap: true,
@@ -332,11 +328,7 @@ class _RelativesScreenState extends State<RelativesScreen> {
                     color: AppColors.primary.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    Icons.person,
-                    color: AppColors.primary,
-                    size: 24,
-                  ),
+                  child: Icon(Icons.person, color: AppColors.primary, size: 24),
                 ),
                 const SizedBox(width: 12),
                 // Name and Relationship
@@ -369,11 +361,7 @@ class _RelativesScreenState extends State<RelativesScreen> {
             // Phone number
             Row(
               children: [
-                Icon(
-                  Icons.phone,
-                  size: 16,
-                  color: AppColors.textMedium,
-                ),
+                Icon(Icons.phone, size: 16, color: AppColors.textMedium),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -413,7 +401,7 @@ class _RelativesScreenState extends State<RelativesScreen> {
                   child: Switch(
                     value: contact.emergencyNotificationsEnabled,
                     onChanged: (_) => _toggleNotification(index),
-                    activeColor: AppColors.safeGreen,
+                    activeThumbColor: AppColors.safeGreen,
                   ),
                 ),
               ],
@@ -440,7 +428,8 @@ class _RelativesScreenState extends State<RelativesScreen> {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('Edit functionality coming soon')),
+                      content: Text('Edit functionality coming soon'),
+                    ),
                   );
                 },
               ),

@@ -7,10 +7,10 @@ class EventRow extends StatelessWidget {
   final VoidCallback onDetailsPressed;
 
   const EventRow({
-    Key? key,
+    super.key,
     required this.event,
     required this.onDetailsPressed,
-  }) : super(key: key);
+  });
 
   Color _getSeverityColor() {
     switch (event.severity) {
@@ -82,12 +82,7 @@ class EventRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border(
-          left: BorderSide(
-            color: _getSeverityColor(),
-            width: 4,
-          ),
-        ),
+        border: Border(left: BorderSide(color: _getSeverityColor(), width: 4)),
       ),
       child: Row(
         children: [
@@ -98,11 +93,7 @@ class EventRow extends StatelessWidget {
               color: _getSeverityColor().withOpacity(0.1),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Icon(
-              _getEventIcon(),
-              color: _getSeverityColor(),
-              size: 20,
-            ),
+            child: Icon(_getEventIcon(), color: _getSeverityColor(), size: 20),
           ),
           const SizedBox(width: 12),
           // Event Type
@@ -135,10 +126,7 @@ class EventRow extends StatelessWidget {
             flex: 2,
             child: Text(
               event.formattedDate,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textMedium,
-              ),
+              style: const TextStyle(fontSize: 13, color: AppColors.textMedium),
             ),
           ),
           // Severity

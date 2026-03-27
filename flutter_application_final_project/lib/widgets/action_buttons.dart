@@ -9,13 +9,13 @@ class ActionButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   const ActionButton({
-    Key? key,
+    super.key,
     required this.icon,
     required this.label,
     required this.backgroundColor,
     required this.textColor,
     required this.onPressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -28,10 +28,7 @@ class ActionButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: textColor.withOpacity(0.2),
-              width: 1.5,
-            ),
+            border: Border.all(color: textColor.withOpacity(0.2), width: 1.5),
           ),
           child: Column(
             children: [
@@ -60,11 +57,11 @@ class ActionButtonsRow extends StatelessWidget {
   final VoidCallback onNotifyRelatives;
 
   const ActionButtonsRow({
-    Key? key,
+    super.key,
     required this.onEmergencyCall,
     required this.onCheckVitals,
     required this.onNotifyRelatives,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
