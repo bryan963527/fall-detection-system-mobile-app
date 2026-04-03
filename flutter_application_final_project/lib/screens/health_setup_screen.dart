@@ -45,10 +45,7 @@ class _HealthSetupScreenState extends State<HealthSetupScreen> {
 
       // 3. Navigate to Dashboard
       if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-          (route) => false,
-        );
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

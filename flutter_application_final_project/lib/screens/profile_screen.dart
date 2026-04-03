@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../constants/app_colors.dart';
 import '../widgets/top_bar.dart';
 import '../widgets/sidebar.dart';
-import 'relatives_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  final String? userId;
+
+  const ProfileScreen({Key? key, this.userId}) : super(key: key);
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -16,7 +19,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _pushNotificationsEnabled = true;
   String _fallSensitivity = 'Medium';
 
+  Map<String, dynamic>? userData;
+  bool _isLoading = true;
+  String? _errorMessage;
+  User? _currentUser;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      // Get currently logged-in user from Firebase Auth
+      _currentUser = FirebaseAuth.instance.currentUser;
+
+      if (_currentUser == null) {
+        setState(() {
+          _errorMessage = 'Not logged in';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Use the passed userId if available (e.g., viewing another user's profile)
+      // Otherwise, use the currently logged-in user's UID
+      final userId = widget.userId ?? _currentUser!.uid;
+
+      print("DEBUG: Loading profile for userId: $userId");
+      print("DEBUG: Current user UID: ${_currentUser!.uid}");
+
+      final snapshot = await FirebaseDatabase.instance.ref('users/$userId').get();
+
+      if (snapshot.exists) {
+        setState(() {
+          userData = Map<String, dynamic>.from(snapshot.value as Map);
+          _isLoading = false;
+        });
+        print("DEBUG: Profile data loaded successfully");
+      } else {
+        setState(() {
+          _errorMessage = 'User profile not found';
+          _isLoading = false;
+        });
+        print("DEBUG: User profile not found in database");
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error loading profile: $e';
+        _isLoading = false;
+      });
+      print("ERROR: Failed to load profile - $e");
+    }
+  }
+
   void _onMenuItemSelected(int index) {
+    if (_selectedMenuIndex == index) return; // Don't navigate if already on this screen
+
     setState(() {
       _selectedMenuIndex = index;
     });
@@ -30,9 +90,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Navigator.of(context).pushReplacementNamed('/history');
         break;
       case 2: // Relatives
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const RelativesScreen()),
-        );
+        Navigator.of(context).pushReplacementNamed('/relatives');
         break;
       case 3: // Profile - Already on profile screen
         break;
@@ -40,13 +98,90 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _onSignOut() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Signing out...')),
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sign Out'),
+        content: const Text('Are you sure you want to sign out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+              if (mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+              }
+            },
+            child: const Text('Sign Out', style: TextStyle(color: AppColors.dangerRed)),
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.lightBackground,
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Loading profile...'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Scaffold(
+        backgroundColor: AppColors.lightBackground,
+        appBar: const TopBar(),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: AppColors.dangerRed,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: AppColors.textDark,
+                ),
+              ),
+              const SizedBox(height: 24),
+              if (_errorMessage == 'Not logged in')
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                  ),
+                  child: const Text(
+                    'Go to Login',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final isMobile = MediaQuery.of(context).size.width < 800;
 
     if (isMobile) {
@@ -130,7 +265,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  String _getInitials(String name) {
+    return name
+        .split(' ')
+        .map((n) => n.isEmpty ? '' : n[0])
+        .take(2)
+        .join()
+        .toUpperCase();
+  }
+
   Widget _buildProfileCard() {
+    if (userData == null) {
+      return const SizedBox.shrink();
+    }
+
+    final name = userData!['name'] ?? 'Unknown User';
+    final age = userData!['age'] ?? 0;
+    final address = userData!['address'] ?? 'No address provided';
+    final conditions = userData!['conditions'] as List<dynamic>? ?? [];
+    final bloodType = userData!['blood_type'] ?? 'Unknown';
+    final email = userData!['email'] ?? '';
+
+    final isCurrentUser = widget.userId == null || widget.userId == _currentUser?.uid;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       padding: const EdgeInsets.all(20),
@@ -147,18 +304,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: Row(
         children: [
-          // Avatar
+          // Avatar with initials
           Container(
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: Color(0xFFE0E7FF),
+              color: const Color(0xFFE0E7FF),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.person,
-              color: AppColors.primary,
-              size: 40,
+            child: Center(
+              child: Text(
+                _getInitials(name),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 20),
@@ -167,52 +329,91 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Eleanor Rigby',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '78 Years Old • 123 Penny Lane, Liverpool',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textMedium,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textDark,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$age years old • $address',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textMedium,
+                            ),
+                          ),
+                          if (email.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                email,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textLight,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
-                // Health badges
+                // Health badges from Firebase
                 Wrap(
                   spacing: 8,
                   children: [
-                    _buildHealthBadge('Hypertension', Color(0xFF1E88E5)),
-                    _buildHealthBadge('Arthritis', Color(0xFFFFA726)),
-                    _buildHealthBadge('Blood Type: A+', Color(0xFFEF5350)),
+                    ..._buildHealthBadges(conditions),
+                    _buildHealthBadge('Blood Type: $bloodType', const Color(0xFFEF5350)),
                   ],
                 ),
               ],
             ),
           ),
           // Status indicator
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.safeGreen,
-              shape: BoxShape.circle,
+          if (isCurrentUser)
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.safeGreen,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check,
+                color: Colors.white,
+                size: 22,
+              ),
             ),
-            child: const Icon(
-              Icons.check,
-              color: Colors.white,
-              size: 22,
-            ),
-          ),
         ],
       ),
     );
+  }
+
+  List<Widget> _buildHealthBadges(List<dynamic> conditions) {
+    final colors = [
+      const Color(0xFF1E88E5),
+      const Color(0xFFFFA726),
+      const Color(0xFF43A047),
+      const Color(0xFFE91E63),
+      const Color(0xFF9C27B0),
+    ];
+
+    return conditions.asMap().entries.map((entry) {
+      final index = entry.key;
+      final condition = entry.value.toString();
+      final color = colors[index % colors.length];
+      return _buildHealthBadge(condition, color);
+    }).toList();
   }
 
   Widget _buildHealthBadge(String label, Color color) {
@@ -238,6 +439,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildDeviceStatus() {
+    final deviceId = userData?['deviceId'] ?? 'Not configured';
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -275,7 +478,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 16),
           // Device details
-          _buildDeviceDetailRow('Device ID', 'GYRO-7723-X'),
+          _buildDeviceDetailRow('Device ID', deviceId),
           const SizedBox(height: 12),
           _buildDeviceDetailRow('Firmware Version', 'v2.4.1'),
           const SizedBox(height: 12),

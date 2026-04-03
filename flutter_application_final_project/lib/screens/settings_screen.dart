@@ -37,24 +37,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     switch (index) {
       case 0:
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
+        Navigator.of(context).pushReplacementNamed('/');
         break;
       case 1:
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HistoryScreen()),
-        );
+        Navigator.of(context).pushReplacementNamed('/history');
         break;
       case 2:
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const RelativesScreen()),
-        );
+        Navigator.of(context).pushReplacementNamed('/relatives');
         break;
       case 3:
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const ProfileScreen()),
-        );
+        Navigator.of(context).pushReplacementNamed('/profile');
         break;
     }
   }

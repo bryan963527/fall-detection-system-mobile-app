@@ -7,6 +7,8 @@ import '../widgets/weekly_activity_chart.dart';
 import 'home_screen.dart';
 import 'profile_screen.dart';
 import 'relatives_screen.dart';
+import 'settings_screen.dart';
+
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -207,21 +209,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     switch (index) {
       case 0:
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
+        Navigator.of(context).pushReplacementNamed('/');
         break;
       case 1:
         break;
       case 2:
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const RelativesScreen()),
-        );
+        Navigator.of(context).pushReplacementNamed('/relatives');
         break;
       case 3:
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const ProfileScreen()),
-        );
+        Navigator.of(context).pushReplacementNamed('/profile');
         break;
     }
   }

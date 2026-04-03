@@ -4,6 +4,7 @@ import '../constants/app_colors.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
 
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -31,9 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // Navigate to Home Screen on success
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
+        Navigator.of(context).pushReplacementNamed('/');
       }
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

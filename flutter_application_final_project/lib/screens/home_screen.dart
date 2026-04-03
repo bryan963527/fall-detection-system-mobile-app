@@ -89,24 +89,16 @@ class _HomeScreenState extends State<HomeScreen> {
       case 0: // Dashboard - Already on home screen
         break;
       case 1: // History
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HistoryScreen()),
-        );
+        Navigator.of(context).pushReplacementNamed('/history');
         break;
       case 2: // Relatives
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const RelativesScreen()),
-        );
+        Navigator.of(context).pushReplacementNamed('/relatives');
         break;
       case 3: // Profile
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const ProfileScreen()),
-        );
+        Navigator.of(context).pushReplacementNamed('/profile');
         break;
-      case 4: // setttings
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const SettingsScreen()),
-        );
+      case 4: // Settings
+        Navigator.of(context).pushReplacementNamed('/settings');
         break;
     }
   }
