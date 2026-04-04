@@ -1,7 +1,8 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../constants/app_colors.dart';
 import '../models/event_model.dart';
-import '../widgets/events_table.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/weekly_activity_chart.dart';
 import 'home_screen.dart';
@@ -29,179 +30,76 @@ class _HistoryScreenState extends State<HistoryScreen> {
   ];
 
   int _selectedMenuIndex = 1;
-  final List<Event> _events = _buildEvents();
+  late DatabaseReference _historyRef;
+  List<Map<String, dynamic>> _rawEvents = [];
+  String? _selectedDeviceId;
 
-  static List<Event> _buildEvents() {
-    return [
-      Event(
-        id: '#001',
-        type: EventType.fallDetected,
-        dateTime: DateTime(2023, 11, 25, 14, 30),
-        severity: Severity.high,
-        status: EventStatus.resolved,
-      ),
-      Event(
-        id: '#002',
-        type: EventType.inactivityAlert,
-        dateTime: DateTime(2023, 11, 24, 9, 15),
-        severity: Severity.medium,
-        status: EventStatus.falseAlarm,
-      ),
-      Event(
-        id: '#003',
-        type: EventType.systemCheck,
-        dateTime: DateTime(2023, 11, 23, 18, 45),
-        severity: Severity.low,
-        status: EventStatus.completed,
-      ),
-      Event(
-        id: '#004',
-        type: EventType.lowBattery,
-        dateTime: DateTime(2023, 11, 22, 11, 20),
-        severity: Severity.medium,
-        status: EventStatus.charged,
-      ),
-      Event(
-        id: '#005',
-        type: EventType.connectivityLost,
-        dateTime: DateTime(2023, 11, 21, 16, 10),
-        severity: Severity.low,
-        status: EventStatus.restored,
-      ),
-      Event(
-        id: '#006',
-        type: EventType.normalMovement,
-        dateTime: DateTime(2023, 11, 20, 10, 5),
-        severity: Severity.low,
-        status: EventStatus.completed,
-      ),
-      Event(
-        id: '#007',
-        type: EventType.fallDetected,
-        dateTime: DateTime(2023, 11, 19, 12, 30),
-        severity: Severity.high,
-        status: EventStatus.resolved,
-      ),
-      Event(
-        id: '#008',
-        type: EventType.lowBattery,
-        dateTime: DateTime(2023, 11, 18, 8, 45),
-        severity: Severity.medium,
-        status: EventStatus.charged,
-      ),
-      Event(
-        id: '#009',
-        type: EventType.systemCheck,
-        dateTime: DateTime(2023, 11, 17, 15, 20),
-        severity: Severity.low,
-        status: EventStatus.completed,
-      ),
-      Event(
-        id: '#010',
-        type: EventType.inactivityAlert,
-        dateTime: DateTime(2023, 11, 16, 19, 50),
-        severity: Severity.medium,
-        status: EventStatus.falseAlarm,
-      ),
-      Event(
-        id: '#011',
-        type: EventType.connectivityLost,
-        dateTime: DateTime(2023, 11, 15, 13, 15),
-        severity: Severity.low,
-        status: EventStatus.restored,
-      ),
-      Event(
-        id: '#012',
-        type: EventType.normalMovement,
-        dateTime: DateTime(2023, 11, 14, 11, 0),
-        severity: Severity.low,
-        status: EventStatus.completed,
-      ),
-      Event(
-        id: '#013',
-        type: EventType.fallDetected,
-        dateTime: DateTime(2023, 11, 13, 9, 30),
-        severity: Severity.high,
-        status: EventStatus.resolved,
-      ),
-      Event(
-        id: '#014',
-        type: EventType.lowBattery,
-        dateTime: DateTime(2023, 11, 12, 7, 10),
-        severity: Severity.medium,
-        status: EventStatus.charged,
-      ),
-      Event(
-        id: '#015',
-        type: EventType.systemCheck,
-        dateTime: DateTime(2023, 11, 11, 17, 45),
-        severity: Severity.low,
-        status: EventStatus.completed,
-      ),
-      Event(
-        id: '#016',
-        type: EventType.inactivityAlert,
-        dateTime: DateTime(2023, 11, 10, 14, 20),
-        severity: Severity.medium,
-        status: EventStatus.falseAlarm,
-      ),
-      Event(
-        id: '#017',
-        type: EventType.connectivityLost,
-        dateTime: DateTime(2023, 11, 9, 10, 55),
-        severity: Severity.low,
-        status: EventStatus.restored,
-      ),
-      Event(
-        id: '#018',
-        type: EventType.normalMovement,
-        dateTime: DateTime(2023, 11, 8, 12, 5),
-        severity: Severity.low,
-        status: EventStatus.completed,
-      ),
-      Event(
-        id: '#019',
-        type: EventType.fallDetected,
-        dateTime: DateTime(2023, 11, 7, 16, 40),
-        severity: Severity.high,
-        status: EventStatus.resolved,
-      ),
-      Event(
-        id: '#020',
-        type: EventType.lowBattery,
-        dateTime: DateTime(2023, 11, 6, 9, 25),
-        severity: Severity.medium,
-        status: EventStatus.charged,
-      ),
-      Event(
-        id: '#021',
-        type: EventType.systemCheck,
-        dateTime: DateTime(2023, 11, 5, 13, 50),
-        severity: Severity.low,
-        status: EventStatus.completed,
-      ),
-      Event(
-        id: '#022',
-        type: EventType.inactivityAlert,
-        dateTime: DateTime(2023, 11, 4, 11, 15),
-        severity: Severity.medium,
-        status: EventStatus.falseAlarm,
-      ),
-      Event(
-        id: '#023',
-        type: EventType.connectivityLost,
-        dateTime: DateTime(2023, 11, 3, 15, 30),
-        severity: Severity.low,
-        status: EventStatus.restored,
-      ),
-      Event(
-        id: '#024',
-        type: EventType.normalMovement,
-        dateTime: DateTime(2023, 11, 2, 10, 10),
-        severity: Severity.low,
-        status: EventStatus.completed,
-      ),
-    ];
+  @override
+  void initState() {
+    super.initState();
+    _selectedDeviceId = 'watch001'; // TODO: Get from user/device selection
+    _historyRef =
+        FirebaseDatabase.instance.ref('history/$_selectedDeviceId');
+  }
+
+  List<Map<String, dynamic>> _convertToEventList(
+      DataSnapshot snapshot) {
+    if (!snapshot.exists) return [];
+
+    List<Map<String, dynamic>> events = [];
+    final data = snapshot.value as Map<dynamic, dynamic>?;
+
+    if (data != null) {
+      data.forEach((key, value) {
+        if (value is Map<dynamic, dynamic>) {
+          events.add({
+            'id': key,
+            'timestamp': value['timestamp'] ?? DateTime.now().millisecondsSinceEpoch,
+            'acc': value['acc'] ?? 0.0,
+            'ax': value['ax'] ?? 0.0,
+            'ay': value['ay'] ?? 0.0,
+            'az': value['az'] ?? 0.0,
+            'temperature': value['temperature'] ?? 0.0,
+            'pressure': value['pressure'] ?? 0.0,
+            'status': value['status'] ?? 'NORMAL',
+          });
+        }
+      });
+    }
+
+    // Sort by timestamp (latest first)
+    events.sort((a, b) => (b['timestamp'] as int).compareTo(a['timestamp'] as int));
+    return events;
+  }
+
+  EventType _mapStatusToEventType(String status) {
+    switch (status.toUpperCase()) {
+      case 'FALL':
+        return EventType.fallDetected;
+      case 'INACTIVITY':
+        return EventType.inactivityAlert;
+      case 'LOW_BATTERY':
+        return EventType.lowBattery;
+      case 'CONNECTIVITY_LOST':
+        return EventType.connectivityLost;
+      case 'SYSTEM_CHECK':
+        return EventType.systemCheck;
+      default:
+        return EventType.normalMovement;
+    }
+  }
+
+  Severity _mapStatusToSeverity(String status) {
+    switch (status.toUpperCase()) {
+      case 'FALL':
+        return Severity.high;
+      case 'INACTIVITY':
+      case 'LOW_BATTERY':
+      case 'CONNECTIVITY_LOST':
+        return Severity.medium;
+      default:
+        return Severity.low;
+    }
   }
 
   void _onMenuItemSelected(int index) {
@@ -231,6 +129,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void _openFilter() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Filter clicked')),
+    );
+  }
+
+  void _showEventDetails(Map<String, dynamic> eventData) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => _EventDetailsSheet(eventData: eventData),
     );
   }
 
@@ -268,31 +176,290 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 onItemSelected: _onMenuItemSelected,
               ),
             Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isDesktop ? 32 : 16,
-                  vertical: isDesktop ? 24 : 16,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _PageHeader(
-                      isDesktop: isDesktop,
-                      onFilterTap: _openFilter,
-                      onExportTap: _exportCsv,
+              child: StreamBuilder<DataSnapshot>(
+                stream: _historyRef.onValue.map((event) => event.snapshot),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
+                    );
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: AppColors.dangerRed,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Failed to load history',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Please try again later.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              setState(() {});
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  final events = _convertToEventList(snapshot.data!);
+
+                  if (events.isEmpty) {
+                    return Center(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.history,
+                              size: 80,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'No Events Yet',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'No incidents or alerts have been recorded.',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  return SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isDesktop ? 32 : 16,
+                      vertical: isDesktop ? 24 : 16,
                     ),
-                    const SizedBox(height: 24),
-                    WeeklyActivityChart(data: _weeklyData),
-                    const SizedBox(height: 24),
-                    EventsTable(events: _events),
-                    const SizedBox(height: 24),
-                  ],
-                ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _PageHeader(
+                          isDesktop: isDesktop,
+                          onFilterTap: _openFilter,
+                          onExportTap: _exportCsv,
+                        ),
+                        const SizedBox(height: 24),
+                        WeeklyActivityChart(data: _weeklyData),
+                        const SizedBox(height: 24),
+                        _EventCardsList(
+                          events: events,
+                          onEventTap: _showEventDetails,
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _EventCardsList extends StatelessWidget {
+  const _EventCardsList({
+    required this.events,
+    required this.onEventTap,
+  });
+
+  final List<Map<String, dynamic>> events;
+  final Function(Map<String, dynamic>) onEventTap;
+
+  Color _getEventColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'FALL':
+        return AppColors.dangerRed;
+      case 'NORMAL':
+        return AppColors.safeGreen;
+      default:
+        return AppColors.warningOrange;
+    }
+  }
+
+  IconData _getEventIcon(String status) {
+    switch (status.toUpperCase()) {
+      case 'FALL':
+        return Icons.warning_rounded;
+      case 'NORMAL':
+        return Icons.check_circle_rounded;
+      default:
+        return Icons.info_rounded;
+    }
+  }
+
+  String _formatDateTime(int timestamp) {
+    final dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+    final formatter = DateFormat('MMM dd, yyyy • hh:mm a');
+    return formatter.format(dateTime);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Recent Events',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF0F172A),
+          ),
+        ),
+        const SizedBox(height: 16),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: events.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final event = events[index];
+            final status = event['status'] as String;
+            final color = _getEventColor(status);
+            final icon = _getEventIcon(status);
+            final timestamp = event['timestamp'] as int;
+
+            return Material(
+              child: InkWell(
+                onTap: () => onEventTap(event),
+                borderRadius: BorderRadius.circular(16),
+                child: Ink(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.grey[200]!,
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            icon,
+                            color: color,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                status,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF0F172A),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _formatDateTime(timestamp),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            status,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: color,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(
+                          Icons.chevron_right,
+                          color: Colors.grey[400],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }
@@ -383,6 +550,218 @@ class _PageHeader extends StatelessWidget {
       children: [
         Expanded(child: titleSection),
         actions,
+      ],
+    );
+  }
+}
+
+class _EventDetailsSheet extends StatelessWidget {
+  const _EventDetailsSheet({
+    required this.eventData,
+  });
+
+  final Map<String, dynamic> eventData;
+
+  String _formatDateTime(int timestamp) {
+    final dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+    final formatter = DateFormat('EEEE, MMMM dd, yyyy • hh:mm a');
+    return formatter.format(dateTime);
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'FALL':
+        return AppColors.dangerRed;
+      case 'NORMAL':
+        return AppColors.safeGreen;
+      default:
+        return AppColors.warningOrange;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final status = eventData['status'] as String;
+    final timestamp = eventData['timestamp'] as int;
+    final acc = eventData['acc'] as num;
+    final ax = eventData['ax'] as num;
+    final ay = eventData['ay'] as num;
+    final az = eventData['az'] as num;
+    final temperature = eventData['temperature'] as num;
+    final pressure = eventData['pressure'] as num;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Event Details',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        size: 20,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Status Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(status).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      status,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: _getStatusColor(status),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Event Type and Time
+                  _DetailRow(
+                    label: 'Event Type',
+                    value: status,
+                  ),
+                  const SizedBox(height: 16),
+                  _DetailRow(
+                    label: 'Date & Time',
+                    value: _formatDateTime(timestamp),
+                  ),
+                  const SizedBox(height: 24),
+                  const Divider(height: 1),
+                  const SizedBox(height: 24),
+                  // Sensor Data Section
+                  const Text(
+                    'Sensor Data',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _DetailRow(
+                    label: 'Total Acceleration',
+                    value: '${acc.toStringAsFixed(2)} m/s²',
+                  ),
+                  const SizedBox(height: 12),
+                  _DetailRow(
+                    label: 'X-Axis',
+                    value: '${ax.toStringAsFixed(2)} m/s²',
+                  ),
+                  const SizedBox(height: 12),
+                  _DetailRow(
+                    label: 'Y-Axis',
+                    value: '${ay.toStringAsFixed(2)} m/s²',
+                  ),
+                  const SizedBox(height: 12),
+                  _DetailRow(
+                    label: 'Z-Axis',
+                    value: '${az.toStringAsFixed(2)} m/s²',
+                  ),
+                  const SizedBox(height: 24),
+                  const Divider(height: 1),
+                  const SizedBox(height: 24),
+                  // Environmental Data Section
+                  const Text(
+                    'Environmental Data',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _DetailRow(
+                    label: 'Temperature',
+                    value: '${temperature.toStringAsFixed(1)}°C',
+                  ),
+                  const SizedBox(height: 12),
+                  _DetailRow(
+                    label: 'Pressure',
+                    value: '${pressure.toStringAsFixed(0)} hPa',
+                  ),
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            color: Color(0xFF64748B),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF0F172A),
+          ),
+        ),
       ],
     );
   }
