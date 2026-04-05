@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import '../constants/app_colors.dart';
+import '../services/firebase_service.dart';
 import 'home_screen.dart';
 
 class HealthSetupScreen extends StatefulWidget {
@@ -28,34 +30,55 @@ class _HealthSetupScreenState extends State<HealthSetupScreen> {
     try {
       // 1. Get current user ID
       final User? user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception("No user logged in!");
+      if (user == null) {
+        print("❌ [HealthSetup] No user logged in");
+        throw Exception("No user logged in!");
+      }
 
-      // 2. Save to Firebase under the user's specific node
-      DatabaseReference healthRef = FirebaseDatabase.instance.ref(
+      print("👤 [HealthSetup] User ID: ${user.uid}");
+
+      // 2. Save to Firebase using the service
+      print("💾 [HealthSetup] Saving health factors...");
+      await FirebaseService.writeWithTimeout(
         "users/${user.uid}/health_factors",
+        {
+          "osteoporosis": _hasOsteoporosis,
+          "vertigo": _hasVertigo,
+          "arthritis": _hasArthritis,
+          "mobility_aid": _usesMobilityAid,
+          "history_of_falls": _historyOfFalls,
+          "vision_impairment": _visionImpairment,
+        },
       );
-      await healthRef.set({
-        "osteoporosis": _hasOsteoporosis,
-        "vertigo": _hasVertigo,
-        "arthritis": _hasArthritis,
-        "mobility_aid": _usesMobilityAid,
-        "history_of_falls": _historyOfFalls,
-        "vision_impairment": _visionImpairment,
-      });
+      print("✅ [HealthSetup] Health factors saved successfully");
 
       // 3. Navigate to Dashboard
       if (mounted) {
+        print("🏠 [HealthSetup] Navigating to home...");
         Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
       }
+    } on TimeoutException catch (e) {
+      print("❌ [HealthSetup] Timeout: ${e.message}");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Connection timed out. Please check your internet."),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+        setState(() => _isLoading = false);
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error saving health data: $e"),
-          backgroundColor: AppColors.dangerRed,
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      print("❌ [HealthSetup] Error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error saving health data: $e"),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+        setState(() => _isLoading = false);
+      }
     }
   }
 

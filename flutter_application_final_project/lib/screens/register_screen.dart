@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_core/firebase_core.dart';
 import '../constants/app_colors.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -24,9 +26,102 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _emergencyContactNameController = TextEditingController();
   final TextEditingController _emergencyContactNumberController = TextEditingController();
 
+  // Google Sign-In data
+  String? _googleUid;
+  late String _googleEmail;
+  late String _googleDisplayName;
+  String? _googlePhotoUrl;
+  String _authProvider = 'email'; // 'email' or 'google'
+  bool _isEmailEditable = true;
+  bool _argumentsInitialized = false;
+
   DateTime? _selectedDOB;
   String _selectedBloodType = 'A+';
   final List<String> _bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
+  @override
+  void initState() {
+    super.initState();
+    print("📝 [RegisterScreen] initState() called");
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Only initialize arguments once
+    if (!_argumentsInitialized) {
+      print("📝 [RegisterScreen] didChangeDependencies() - Initializing arguments");
+      _initializeGoogleData();
+      _argumentsInitialized = true;
+    }
+  }
+
+  void _initializeGoogleData() {
+    try {
+      print("📝 [RegisterScreen] Retrieving route arguments...");
+      
+      // Safely retrieve arguments passed from LoginScreen
+      final route = ModalRoute.of(context);
+      print("📝 [RegisterScreen] Route: $route");
+      
+      final settings = route?.settings;
+      print("📝 [RegisterScreen] Settings: $settings");
+      
+      final rawArguments = settings?.arguments;
+      print("📝 [RegisterScreen] Raw arguments: $rawArguments (type: ${rawArguments.runtimeType})");
+
+      // Safely cast arguments
+      final arguments = rawArguments is Map<String, dynamic> ? rawArguments : null;
+      
+      if (arguments == null) {
+        print("⚠️  [RegisterScreen] No arguments passed or invalid type");
+        print("📝 [RegisterScreen] Defaulting to email registration");
+        _authProvider = 'email';
+        _isEmailEditable = true;
+        return;
+      }
+
+      print("✅ [RegisterScreen] Arguments retrieved successfully");
+
+      // Safely extract values with null-coalescing
+      _googleUid = arguments['uid'] as String?;
+      _googleEmail = (arguments['email'] as String?) ?? '';
+      _googleDisplayName = (arguments['displayName'] as String?) ?? 'User';
+      _googlePhotoUrl = arguments['photoUrl'] as String?;
+      _authProvider = arguments['provider'] as String? ?? 'email';
+
+      print("📝 [RegisterScreen] UID: $_googleUid");
+      print("📝 [RegisterScreen] Email: $_googleEmail");
+      print("📝 [RegisterScreen] Display Name: $_googleDisplayName");
+      print("📝 [RegisterScreen] Provider: $_authProvider");
+
+      // Pre-fill fields if coming from Google
+      if (_authProvider == 'google' && _googleEmail.isNotEmpty) {
+        print("📝 [RegisterScreen] Pre-filling fields from Google data");
+        
+        _emailController.text = _googleEmail;
+        print("✅ [RegisterScreen] Email pre-filled: $_googleEmail");
+        
+        if (_googleDisplayName.isNotEmpty) {
+          _nameController.text = _googleDisplayName;
+          print("✅ [RegisterScreen] Name pre-filled: $_googleDisplayName");
+        }
+        
+        _isEmailEditable = false; // Disable email editing for Google users
+        print("✅ [RegisterScreen] Email field disabled (Google user)");
+      } else {
+        print("📝 [RegisterScreen] Email registration - all fields editable");
+        _isEmailEditable = true;
+      }
+    } catch (e, stackTrace) {
+      print("❌ [RegisterScreen] Error initializing Google data: $e");
+      print("📋 Stack trace: $stackTrace");
+      // Fail gracefully - default to email registration
+      _authProvider = 'email';
+      _isEmailEditable = true;
+    }
+  }
 
   @override
   void dispose() {
@@ -82,25 +177,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = true);
 
     print("--- REGISTRATION DEBUG: STARTING ---");
+    print("Provider: $_authProvider");
 
     try {
-      // 1. Create user in Firebase Auth
-      print("DEBUG: Creating user with email: ${_emailController.text.trim()}");
-      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+      String uid;
+
+      // Handle email registration or Google user profile completion
+      if (_authProvider == 'google') {
+        // For Google sign-in, use the existing user
+        print("📝 [Register] Using existing Google-authenticated user");
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) {
+          throw Exception('No authenticated user found. Please sign in again.');
+        }
+        uid = user.uid;
+        print("✅ [Register] Using Google user ID: $uid");
+      } else {
+        // For email registration, create new user
+        print("📝 [Register] Creating new email user...");
+        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+        uid = userCredential.user!.uid;
+        print("✅ [Register] Email user created. UID: $uid");
+      }
+
+      // Save complete profile to Realtime Database with timeout
+      print("📝 [Register] Saving user profile to database...");
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL:
+            "https://app-dev-safestefs-default-rtdb.asia-southeast1.firebasedatabase.app",
       );
-
-      String uid = userCredential.user!.uid;
-      print("DEBUG: User created successfully. UID: $uid");
-
-      // 2. Save complete profile to Realtime Database
-      print("DEBUG: Saving user profile to database...");
-      DatabaseReference userRef = FirebaseDatabase.instance.ref("users/$uid");
+      
+      DatabaseReference userRef = database.ref("users/$uid");
 
       final int age = int.tryParse(_ageController.text.trim()) ?? 0;
 
-      await userRef.set({
+      final userData = {
         "name": _nameController.text.trim(),
         "email": _emailController.text.trim(),
         "age": age,
@@ -111,42 +226,79 @@ class _RegisterScreenState extends State<RegisterScreen> {
         "deviceId": "watch001",
         "emergency_contact_name": _emergencyContactNameController.text.trim(),
         "emergency_contact_number": _emergencyContactNumberController.text.trim(),
+        "provider": _authProvider,
+        "photo_url": _googlePhotoUrl,
         "created_at": DateTime.now().toIso8601String(),
-      });
+      };
 
-      print("DEBUG: Profile saved successfully!");
+      print("📝 [Register] User data: $userData");
 
-      // 3. Navigate to Health Setup Screen
+      // Write to database with timeout
+      await userRef.set(userData).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          throw TimeoutException('Database write timed out after 5 seconds');
+        },
+      );
+
+      print("✅ [Register] Profile saved successfully!");
+
+      // Navigate to Home Screen
       if (mounted) {
-        print("DEBUG: Navigating to Health Setup Screen...");
-        Navigator.of(context).pushNamedAndRemoveUntil('/health-setup', (route) => false);
+        print("📝 [Register] Navigating to Home Screen...");
+        setState(() => _isLoading = false);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registration completed successfully! 🎉'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
       }
     } on FirebaseAuthException catch (e) {
-      print("!!! FIREBASE AUTH ERROR !!!");
-      print("Error Code: ${e.code}");
-      print("Error Message: ${e.message}");
+      print("❌ [Register] Firebase Auth Error: ${e.code} - ${e.message}");
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message ?? "Registration failed. Try again."),
-          backgroundColor: AppColors.dangerRed,
-        ),
-      );
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message ?? "Registration failed. Please try again."),
+            backgroundColor: AppColors.dangerRed,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } on TimeoutException catch (e) {
+      print("❌ [Register] Timeout Error: ${e.message}");
+      
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Database connection timed out. Please check your internet."),
+            backgroundColor: AppColors.dangerRed,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     } catch (e, stackTrace) {
-      print("!!! GENERAL/DATABASE ERROR !!!");
-      print("Error: $e");
-      print("Stack Trace: $stackTrace");
+      print("❌ [Register] Unexpected Error: $e");
+      print("📋 Stack trace: $stackTrace");
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("An error occurred. Check terminal logs."),
-          backgroundColor: AppColors.dangerRed,
-        ),
-      );
-    } finally {
-      print("--- REGISTRATION DEBUG: FINISHED ---");
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("An error occurred: ${e.toString()}"),
+            backgroundColor: AppColors.dangerRed,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
+    print("--- REGISTRATION DEBUG: FINISHED ---");
   }
 
   @override
@@ -226,10 +378,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
+                    enabled: _isEmailEditable,
+                    decoration: InputDecoration(
                       labelText: 'Email Address',
-                      prefixIcon: Icon(Icons.email_outlined),
-                      border: OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      border: const OutlineInputBorder(),
+                      helperText: _authProvider == 'google' ? 'Auto-filled from Google' : null,
                     ),
                     validator: (value) {
                       if (value!.isEmpty) return 'Email is required';
@@ -239,37 +393,64 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: Icon(Icons.lock_outline),
-                      border: OutlineInputBorder(),
+                  if (_authProvider == 'email') ...[
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Password',
+                        prefixIcon: Icon(Icons.lock_outline),
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value!.isEmpty) return 'Password is required';
+                        if (value.length < 6) return 'Password must be at least 6 characters';
+                        return null;
+                      },
                     ),
-                    validator: (value) {
-                      if (value!.isEmpty) return 'Password is required';
-                      if (value.length < 6) return 'Password must be at least 6 characters';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                  TextFormField(
-                    controller: _confirmPasswordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Confirm Password',
-                      prefixIcon: Icon(Icons.lock_outline),
-                      border: OutlineInputBorder(),
+                    TextFormField(
+                      controller: _confirmPasswordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Confirm Password',
+                        prefixIcon: Icon(Icons.lock_outline),
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value!.isEmpty) return 'Please confirm your password';
+                        if (value != _passwordController.text) return 'Passwords do not match';
+                        return null;
+                      },
                     ),
-                    validator: (value) {
-                      if (value!.isEmpty) return 'Please confirm your password';
-                      if (value != _passwordController.text) return 'Passwords do not match';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
+                  ] else ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.blue.shade600, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Password is managed by Google',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
 
                   // Health & Personal Details Section
                   const Text(

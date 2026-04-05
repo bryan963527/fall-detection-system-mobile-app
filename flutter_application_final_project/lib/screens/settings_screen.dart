@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import '../constants/app_colors.dart';
+import '../services/firebase_service.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/top_bar.dart';
 
@@ -272,24 +274,60 @@ class _HealthSettingsModalState extends State<HealthSettingsModal> {
     }
 
     try {
-      DatabaseReference healthRef = FirebaseDatabase.instance.ref(
-        "users/${_user!.uid}/health_factors",
+      print('📖 Loading health data for user: ${_user!.uid}');
+      
+      final data = await FirebaseService.getWithTimeout(
+        'users/${_user!.uid}/health_factors',
+        timeout: const Duration(seconds: 5),
       );
-      DataSnapshot snapshot = await healthRef.get();
 
-      if (snapshot.exists) {
-        final data = Map<String, dynamic>.from(snapshot.value as Map);
-        setState(() {
-          _hasOsteoporosis = data['osteoporosis'] ?? false;
-          _hasVertigo = data['vertigo'] ?? false;
-          _usesMobilityAid = data['mobility_aid'] ?? false;
-          _historyOfFalls = data['history_of_falls'] ?? false;
-        });
+      if (mounted) {
+        if (data != null) {
+          setState(() {
+            _hasOsteoporosis = data['osteoporosis'] ?? false;
+            _hasVertigo = data['vertigo'] ?? false;
+            _usesMobilityAid = data['mobility_aid'] ?? false;
+            _historyOfFalls = data['history_of_falls'] ?? false;
+            print('✅ Health data loaded successfully');
+          });
+        } else {
+          print('ℹ️ No health data found for user');
+        }
+      }
+    } on TimeoutException {
+      print('❌ Health data load timed out');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Connection timed out. Please check your internet.'),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+      }
+    } on FirebaseException catch (e) {
+      print('❌ Firebase error loading health data: ${e.code} - ${e.message}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.message}'),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
       }
     } catch (e) {
-      print("Error loading health data: $e");
+      print('❌ Unexpected error loading health data: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading data: $e'),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -299,16 +337,21 @@ class _HealthSettingsModalState extends State<HealthSettingsModal> {
     setState(() => _isSaving = true);
 
     try {
-      DatabaseReference healthRef = FirebaseDatabase.instance.ref(
-        "users/${_user!.uid}/health_factors",
+      print('✏️ Saving health data for user: ${_user!.uid}');
+      
+      await FirebaseService.writeWithTimeout(
+        'users/${_user!.uid}/health_factors',
+        {
+          "osteoporosis": _hasOsteoporosis,
+          "vertigo": _hasVertigo,
+          "mobility_aid": _usesMobilityAid,
+          "history_of_falls": _historyOfFalls,
+        },
+        timeout: const Duration(seconds: 5),
       );
-      await healthRef.set({
-        "osteoporosis": _hasOsteoporosis,
-        "vertigo": _hasVertigo,
-        "mobility_aid": _usesMobilityAid,
-        "history_of_falls": _historyOfFalls,
-      });
 
+      print('✅ Health data saved successfully');
+      
       if (mounted) {
         Navigator.pop(context); // Close the modal
         ScaffoldMessenger.of(context).showSnackBar(
@@ -318,13 +361,36 @@ class _HealthSettingsModalState extends State<HealthSettingsModal> {
           ),
         );
       }
+    } on TimeoutException {
+      print('❌ Health data save timed out');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Connection timed out. Please check your internet.'),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+      }
+    } on FirebaseException catch (e) {
+      print('❌ Firebase error saving health data: ${e.code} - ${e.message}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.message}'),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error saving data: $e"),
-          backgroundColor: AppColors.dangerRed,
-        ),
-      );
+      print('❌ Unexpected error saving health data: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error saving data: $e"),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }

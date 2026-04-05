@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import '../constants/app_colors.dart';
 import '../widgets/top_bar.dart';
 import '../widgets/sidebar.dart';
@@ -32,10 +34,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadUserData() async {
     try {
+      print("👤 [ProfileScreen] Step 1: Getting current user from Firebase Auth...");
+      
       // Get currently logged-in user from Firebase Auth
       _currentUser = FirebaseAuth.instance.currentUser;
 
       if (_currentUser == null) {
+        print("❌ [ProfileScreen] No user logged in");
         setState(() {
           _errorMessage = 'Not logged in';
           _isLoading = false;
@@ -43,34 +48,92 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return;
       }
 
+      print("✅ [ProfileScreen] Current user UID: ${_currentUser!.uid}");
+
       // Use the passed userId if available (e.g., viewing another user's profile)
       // Otherwise, use the currently logged-in user's UID
       final userId = widget.userId ?? _currentUser!.uid;
+      print("👤 [ProfileScreen] Step 2: Loading profile for userId: $userId");
 
-      print("DEBUG: Loading profile for userId: $userId");
-      print("DEBUG: Current user UID: ${_currentUser!.uid}");
+      // Connect to Firebase Realtime Database with explicit region
+      print("🔗 [ProfileScreen] Step 3: Connecting to Firebase Realtime Database...");
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL:
+            "https://app-dev-safestefs-default-rtdb.asia-southeast1.firebasedatabase.app",
+      );
 
-      final snapshot = await FirebaseDatabase.instance.ref('users/$userId').get();
+      print("📖 [ProfileScreen] Step 4: Fetching user data from database...");
+      
+      // Add timeout to prevent infinite hanging
+      final snapshot = await database
+          .ref('users/$userId')
+          .get()
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              throw TimeoutException('Database read timed out after 5 seconds');
+            },
+          );
+
+      print("📦 [ProfileScreen] Step 5: Snapshot received");
+      print("📦 [ProfileScreen] Snapshot exists: ${snapshot.exists}");
+      print("📦 [ProfileScreen] Snapshot value type: ${snapshot.value.runtimeType}");
 
       if (snapshot.exists) {
-        setState(() {
-          userData = Map<String, dynamic>.from(snapshot.value as Map);
-          _isLoading = false;
-        });
-        print("DEBUG: Profile data loaded successfully");
+        print("✅ [ProfileScreen] User profile found, processing data...");
+        
+        // Safely convert snapshot to Map
+        final value = snapshot.value;
+        
+        if (value is Map) {
+          final userData = Map<String, dynamic>.from(value);
+          print("✅ [ProfileScreen] Profile data loaded successfully");
+          print("📝 [ProfileScreen] User name: ${userData['name']}");
+          
+          setState(() {
+            this.userData = userData;
+            _isLoading = false;
+          });
+        } else {
+          print("⚠️  [ProfileScreen] Unexpected snapshot value type: $value");
+          setState(() {
+            _errorMessage = 'Invalid profile data format';
+            _isLoading = false;
+          });
+        }
       } else {
+        print("⚠️  [ProfileScreen] User profile not found in database");
         setState(() {
-          _errorMessage = 'User profile not found';
+          _errorMessage = 'User profile not found. Please complete registration.';
           _isLoading = false;
         });
-        print("DEBUG: User profile not found in database");
       }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Error loading profile: $e';
-        _isLoading = false;
-      });
-      print("ERROR: Failed to load profile - $e");
+    } on TimeoutException catch (e) {
+      print("❌ [ProfileScreen] Timeout Error: ${e.message}");
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Connection timed out. Please check your internet and try again.';
+          _isLoading = false;
+        });
+      }
+    } on FirebaseException catch (e) {
+      print("❌ [ProfileScreen] Firebase Error: ${e.code} - ${e.message}");
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Database error: ${e.message}';
+          _isLoading = false;
+        });
+      }
+    } catch (e, stackTrace) {
+      print("❌ [ProfileScreen] Unexpected Error: $e");
+      print("📋 Stack trace: $stackTrace");
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error loading profile: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 

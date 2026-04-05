@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../constants/app_colors.dart';
 import '../models/event_model.dart';
+import '../services/firebase_service.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/weekly_activity_chart.dart';
 import 'home_screen.dart';
@@ -37,9 +39,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   void initState() {
     super.initState();
+    print("📱 [HistoryScreen] Initializing...");
     _selectedDeviceId = 'watch001'; // TODO: Get from user/device selection
-    _historyRef =
-        FirebaseDatabase.instance.ref('history/$_selectedDeviceId');
+    _historyRef = FirebaseService.ref('history/$_selectedDeviceId');
+    print("🔗 [HistoryScreen] History ref initialized for device: $_selectedDeviceId");
   }
 
   List<Map<String, dynamic>> _convertToEventList(

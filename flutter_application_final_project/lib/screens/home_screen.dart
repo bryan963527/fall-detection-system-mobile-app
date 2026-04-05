@@ -15,26 +15,33 @@ import 'relatives_screen.dart';
 import 'settings_screen.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_core/firebase_core.dart';
+import '../services/firebase_service.dart';
 
 // Function to simulate an IoT fall detection trigger
 void triggerFallAlert() async {
   try {
-    // 1. Point to a node in your database called "fall_alerts"
-    DatabaseReference databaseRef = FirebaseDatabase.instance.ref(
-      "fall_alerts",
+    print('🚨 [HomeScreen] Triggering fall alert');
+    
+    final alertId = DateTime.now().millisecondsSinceEpoch.toString();
+    
+    await FirebaseService.writeWithTimeout(
+      'fall_alerts/$alertId',
+      {
+        "status": "CRITICAL: Fall Detected!",
+        "timestamp": DateTime.now().toIso8601String(),
+        "device_id": "elderly_sensor_01",
+        "resolved": false,
+      },
+      timeout: const Duration(seconds: 5),
     );
 
-    // 2. Push a new record with a unique ID
-    await databaseRef.push().set({
-      "status": "CRITICAL: Fall Detected!",
-      "timestamp": DateTime.now().toIso8601String(),
-      "device_id": "elderly_sensor_01",
-      "resolved": false,
-    });
-
-    print("✅ Alert successfully sent to Firebase!");
+    print("✅ [HomeScreen] Alert successfully sent to Firebase!");
+  } on TimeoutException {
+    print("❌ [HomeScreen] Fall alert timeout");
+  } on FirebaseException catch (e) {
+    print("❌ [HomeScreen] Firebase error sending alert: ${e.code} - ${e.message}");
   } catch (e) {
-    print("❌ Failed to send alert: $e");
+    print("❌ [HomeScreen] Error sending fall alert: $e");
   }
 }
 
@@ -169,15 +176,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _setupHistoryListener() {
     try {
-      DatabaseReference historyRef = FirebaseDatabase.instance.ref('history/watch001');
+      print('📖 [HomeScreen] Setting up history listener for watch001');
+      
+      DatabaseReference historyRef = FirebaseService.ref('history/watch001');
       
       _historyListener = historyRef.onValue.listen((DatabaseEvent event) {
         if (!mounted) return;
 
+        print('📖 [HomeScreen] History snapshot received');
         setState(() {
           _isLoadingHistory = false;
           _historyError = null;
           _recentActivities = _convertToActivityList(event.snapshot);
+          print('✅ [HomeScreen] Loaded ${_recentActivities.length} activities');
         });
       }, onError: (error) {
         if (!mounted) return;
@@ -268,7 +279,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _setupFirebaseListener() {
     try {
-      DatabaseReference ref = FirebaseDatabase.instance.ref('devices/watch001/live');
+      print('📡 [HomeScreen] Setting up Firebase listener for watch001 live data');
+      
+      DatabaseReference ref = FirebaseService.ref('devices/watch001/live');
       
       _dataListener = ref.onValue.listen((DatabaseEvent event) {
         if (!mounted) return;

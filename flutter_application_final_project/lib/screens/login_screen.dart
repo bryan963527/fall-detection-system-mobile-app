@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../constants/app_colors.dart';
 import 'register_screen.dart';
@@ -136,19 +138,25 @@ class _LoginScreenState extends State<LoginScreen>
     }
 
     setState(() => _isLoading = true);
+    print("🔐 [Google Login] Step 1: Starting Google Sign-In...");
 
     try {
       // Sign out first to show account picker
+      print("🔐 [Google Login] Step 2: Signing out to show account picker...");
       await GoogleSignIn().signOut();
 
       // Trigger the Google Sign-In flow
+      print("🔐 [Google Login] Step 3: Triggering Google Sign-In flow...");
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
 
       // User cancelled the sign-in
       if (googleUser == null) {
+        print("⚠️  [Google Login] User cancelled sign-in");
         if (mounted) setState(() => _isLoading = false);
         return;
       }
+
+      print("🔐 [Google Login] Step 4: Google Sign-In successful for: ${googleUser.email}");
 
       // Get authentication details
       final GoogleSignInAuthentication googleAuth =
@@ -161,24 +169,77 @@ class _LoginScreenState extends State<LoginScreen>
       );
 
       // Sign in with Firebase
+      print("🔐 [Google Login] Step 5: Signing in with Firebase...");
       final UserCredential userCredential =
           await FirebaseAuth.instance.signInWithCredential(credential);
 
-      // Save user data to Firebase Realtime Database
-      await _saveUserToDatabase(userCredential.user!);
+      final User user = userCredential.user!;
+      print("✅ [Google Login] Firebase Auth successful. UID: ${user.uid}");
 
-      // Navigate to Home Screen on success
-      if (mounted) {
+      // Check if user exists in Firebase Realtime Database
+      print("🔐 [Google Login] Step 6: Checking if user exists in database...");
+      final database = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL:
+            "https://app-dev-safestefs-default-rtdb.asia-southeast1.firebasedatabase.app",
+      );
+
+      // Add timeout to prevent hanging
+      final snapshot = await database
+          .ref('users/${user.uid}')
+          .get()
+          .timeout(const Duration(seconds: 5), onTimeout: () {
+        throw TimeoutException('Database read timed out after 5 seconds');
+      });
+
+      print(
+          "✅ [Google Login] Database read successful. User exists: ${snapshot.exists}");
+
+      if (!mounted) {
+        print("⚠️  [Google Login] Widget unmounted, cancelling navigation");
+        return;
+      }
+
+      if (snapshot.exists) {
+        // User exists - navigate to Home Screen
+        print("🏠 [Google Login] User exists in database, navigating to HomeScreen...");
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Google sign-in successful! Redirecting...'),
+            content: Text('Welcome back! Redirecting...'),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 2),
           ),
         );
-        Navigator.of(context).pushReplacementNamed('/');
+        if (mounted) {
+          setState(() => _isLoading = false);
+          Navigator.of(context).pushReplacementNamed('/');
+        }
+      } else {
+        // New user - navigate to Register Screen with Google data
+        print("📝 [Google Login] New user detected, navigating to RegisterScreen...");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Completing your profile...'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        if (mounted) {
+          setState(() => _isLoading = false);
+          Navigator.of(context).pushReplacementNamed(
+            '/register',
+            arguments: {
+              'uid': user.uid,
+              'email': user.email,
+              'displayName': user.displayName,
+              'photoUrl': user.photoURL,
+              'provider': 'google',
+            },
+          );
+        }
       }
     } on FirebaseAuthException catch (e) {
+      print("❌ [Google Login] Firebase Auth Error: ${e.code} - ${e.message}");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -187,8 +248,23 @@ class _LoginScreenState extends State<LoginScreen>
             duration: const Duration(seconds: 4),
           ),
         );
+        setState(() => _isLoading = false);
       }
-    } catch (e) {
+    } on TimeoutException catch (e) {
+      print("❌ [Google Login] Timeout Error: ${e.message}");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Database connection timed out. Please check your internet."),
+            backgroundColor: AppColors.dangerRed,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+        setState(() => _isLoading = false);
+      }
+    } catch (e, stackTrace) {
+      print("❌ [Google Login] Unexpected Error: $e");
+      print("📋 Stack trace: $stackTrace");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -197,34 +273,8 @@ class _LoginScreenState extends State<LoginScreen>
             duration: const Duration(seconds: 4),
           ),
         );
+        setState(() => _isLoading = false);
       }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _saveUserToDatabase(User user) async {
-    try {
-      final DatabaseReference usersRef =
-          FirebaseDatabase.instance.ref('users/${user.uid}');
-
-      // Check if user already exists
-      final DataSnapshot snapshot = await usersRef.get();
-
-      // Only save if user doesn't exist
-      if (!snapshot.exists) {
-        await usersRef.set({
-          'name': user.displayName ?? 'User',
-          'email': user.email ?? '',
-          'photoUrl': user.photoURL ?? '',
-          'provider': 'google',
-          'createdAt': DateTime.now().toIso8601String(),
-          'uid': user.uid,
-        });
-      }
-    } catch (e) {
-      // Log error but don't block login
-      debugPrint('Error saving user to database: $e');
     }
   }
 

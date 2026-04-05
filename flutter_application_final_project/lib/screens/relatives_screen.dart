@@ -4,6 +4,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../constants/app_colors.dart';
 import '../models/relative_model.dart';
+import '../services/firebase_service.dart';
 import '../widgets/top_bar.dart';
 import '../widgets/sidebar.dart';
 import 'add_edit_relative_screen.dart';
@@ -36,6 +37,7 @@ class _RelativesScreenState extends State<RelativesScreen> {
     _currentUser = FirebaseAuth.instance.currentUser;
 
     if (_currentUser == null) {
+      print("❌ [RelativesScreen] No user logged in");
       setState(() {
         _errorMessage = 'Not logged in';
         _isLoading = false;
@@ -43,9 +45,9 @@ class _RelativesScreenState extends State<RelativesScreen> {
       return;
     }
 
-    print("DEBUG: Current user UID: ${_currentUser!.uid}");
-    _relativesRef = FirebaseDatabase.instance
-        .ref('users/${_currentUser!.uid}/relatives');
+    print("✅ [RelativesScreen] Current user UID: ${_currentUser!.uid}");
+    _relativesRef = FirebaseService.ref('users/${_currentUser!.uid}/relatives');
+    print("🔗 [RelativesScreen] Relatives ref initialized");
     _loadRelativesRealtime();
   }
 
@@ -705,49 +707,76 @@ class _AddRelativeModalContentState extends State<_AddRelativeModalContent>
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('User not authenticated'),
-            backgroundColor: AppColors.dangerRed,
-          ),
-        );
+        print('❌ [AddRelativeModal] User not authenticated');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('User not authenticated'),
+              backgroundColor: AppColors.dangerRed,
+            ),
+          );
+        }
         return;
       }
 
-      final relativesRef = FirebaseDatabase.instance
-          .ref('users/${user.uid}/relatives');
-
+      // Generate a unique ID for the relative
+      final newRelativeId = DateTime.now().millisecondsSinceEpoch.toString();
       final age = int.tryParse(_ageController.text) ?? 0;
 
-      print("DEBUG: Creating new relative");
-      final newRelativeRef = relativesRef.push();
-      await newRelativeRef.set({
+      print('✏️ [AddRelativeModal] Creating new relative with ID: $newRelativeId');
+
+      final relativeData = {
         'name': _nameController.text.trim(),
         'age': age,
         'relationship': _selectedRelationship,
         'contact': _contactController.text.trim(),
         'address': _addressController.text.trim(),
         'createdAt': DateTime.now().toIso8601String(),
-      });
-      print("DEBUG: Relative created successfully with ID: ${newRelativeRef.key}");
+      };
+
+      await FirebaseService.writeWithTimeout(
+        'users/${user.uid}/relatives/$newRelativeId',
+        relativeData,
+        timeout: const Duration(seconds: 5),
+      );
+
+      print('✅ [AddRelativeModal] Relative created successfully with ID: $newRelativeId');
 
       if (mounted) {
-        // Show success snackbar
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Relative added successfully!'),
+          const SnackBar(
+            content: Text('Relative added successfully!'),
             backgroundColor: AppColors.safeGreen,
-            duration: const Duration(seconds: 2),
+            duration: Duration(seconds: 2),
           ),
         );
 
-        // Close modal with slight delay for visual feedback
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) Navigator.pop(context);
         });
       }
+    } on TimeoutException {
+      print('❌ [AddRelativeModal] Save timed out');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Connection timed out. Please check your internet.'),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+      }
+    } on FirebaseException catch (e) {
+      print('❌ [AddRelativeModal] Firebase error: ${e.code} - ${e.message}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.message}'),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+      }
     } catch (e) {
-      print("ERROR: Failed to save relative - $e");
+      print('❌ [AddRelativeModal] Error saving relative: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

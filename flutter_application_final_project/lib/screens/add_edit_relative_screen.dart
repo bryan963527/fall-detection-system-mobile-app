@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../constants/app_colors.dart';
 import '../models/relative_model.dart';
+import '../services/firebase_service.dart';
 
 class AddEditRelativeScreen extends StatefulWidget {
   final RelativeModel? relative;
@@ -68,6 +70,7 @@ class _AddEditRelativeScreenState extends State<AddEditRelativeScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
+        print("❌ [AddEditRelative] User not authenticated");
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('User not authenticated'),
@@ -77,35 +80,40 @@ class _AddEditRelativeScreenState extends State<AddEditRelativeScreen> {
         return;
       }
 
-      final relativesRef = FirebaseDatabase.instance
-          .ref('users/${user.uid}/relatives');
-
       final age = int.tryParse(_ageController.text) ?? 0;
 
       if (widget.isEdit && widget.relative?.id != null) {
         // Update existing relative
-        print("DEBUG: Updating relative ${widget.relative!.id}");
-        await relativesRef.child(widget.relative!.id!).update({
-          'name': _nameController.text.trim(),
-          'age': age,
-          'relationship': _selectedRelationship,
-          'contact': _contactController.text.trim(),
-          'address': _addressController.text.trim(),
-        });
-        print("DEBUG: Relative updated successfully");
+        print("✏️  [AddEditRelative] Updating relative ${widget.relative!.id}");
+        await FirebaseService.updateWithTimeout(
+          'users/${user.uid}/relatives/${widget.relative!.id}',
+          {
+            'name': _nameController.text.trim(),
+            'age': age,
+            'relationship': _selectedRelationship,
+            'contact': _contactController.text.trim(),
+            'address': _addressController.text.trim(),
+          },
+        );
+        print("✅ [AddEditRelative] Relative updated successfully");
       } else {
         // Create new relative
-        print("DEBUG: Creating new relative");
-        final newRelativeRef = relativesRef.push();
-        await newRelativeRef.set({
-          'name': _nameController.text.trim(),
-          'age': age,
-          'relationship': _selectedRelationship,
-          'contact': _contactController.text.trim(),
-          'address': _addressController.text.trim(),
-          'createdAt': DateTime.now().toIso8601String(),
-        });
-        print("DEBUG: Relative created successfully with ID: ${newRelativeRef.key}");
+        print("✏️  [AddEditRelative] Creating new relative");
+        final newRelativeRef = FirebaseService.ref('users/${user.uid}/relatives');
+        final newRef = newRelativeRef.push();
+        
+        await FirebaseService.writeWithTimeout(
+          'users/${user.uid}/relatives/${newRef.key}',
+          {
+            'name': _nameController.text.trim(),
+            'age': age,
+            'relationship': _selectedRelationship,
+            'contact': _contactController.text.trim(),
+            'address': _addressController.text.trim(),
+            'createdAt': DateTime.now().toIso8601String(),
+          },
+        );
+        print("✅ [AddEditRelative] Relative created successfully with ID: ${newRef.key}");
       }
 
       if (mounted) {
@@ -117,8 +125,18 @@ class _AddEditRelativeScreenState extends State<AddEditRelativeScreen> {
         );
         Navigator.pop(context);
       }
+    } on TimeoutException catch (e) {
+      print("❌ [AddEditRelative] Timeout: ${e.message}");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Connection timed out. Please try again.'),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+      }
     } catch (e) {
-      print("ERROR: Failed to save relative - $e");
+      print("❌ [AddEditRelative] Error saving relative: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -342,14 +360,16 @@ class _AddEditRelativeScreenState extends State<AddEditRelativeScreen> {
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        print("❌ [AddEditRelative] User not authenticated");
+        return;
+      }
 
-      final relativesRef = FirebaseDatabase.instance
-          .ref('users/${user.uid}/relatives');
-
-      print("DEBUG: Deleting relative ${widget.relative!.id}");
-      await relativesRef.child(widget.relative!.id!).remove();
-      print("DEBUG: Relative deleted successfully");
+      print("🗑️  [AddEditRelative] Deleting relative ${widget.relative!.id}");
+      await FirebaseService.deleteWithTimeout(
+        'users/${user.uid}/relatives/${widget.relative!.id}',
+      );
+      print("✅ [AddEditRelative] Relative deleted successfully");
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -360,8 +380,18 @@ class _AddEditRelativeScreenState extends State<AddEditRelativeScreen> {
         );
         Navigator.pop(context);
       }
+    } on TimeoutException catch (e) {
+      print("❌ [AddEditRelative] Timeout: ${e.message}");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Connection timed out. Please try again.'),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+      }
     } catch (e) {
-      print("ERROR: Failed to delete relative - $e");
+      print("❌ [AddEditRelative] Error deleting relative: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
