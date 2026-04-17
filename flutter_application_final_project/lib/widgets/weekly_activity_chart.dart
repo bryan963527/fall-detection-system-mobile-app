@@ -6,9 +6,9 @@ class WeeklyActivityChart extends StatelessWidget {
   final List<WeeklyActivityData> data;
 
   const WeeklyActivityChart({
-    Key? key,
+    super.key,
     required this.data,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

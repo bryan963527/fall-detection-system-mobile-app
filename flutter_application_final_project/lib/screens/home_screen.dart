@@ -46,7 +46,7 @@ void triggerFallAlert() async {
 }
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -290,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         setState(() {
           if (data is Map) {
-            _sensorData = Map<String, dynamic>.from(data as Map);
+            _sensorData = Map<String, dynamic>.from(data);
           }
 
           // Check for fall detection and show alert only once

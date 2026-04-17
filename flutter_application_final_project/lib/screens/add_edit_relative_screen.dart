@@ -11,10 +11,10 @@ class AddEditRelativeScreen extends StatefulWidget {
   final bool isEdit;
 
   const AddEditRelativeScreen({
-    Key? key,
+    super.key,
     this.relative,
     this.isEdit = false,
-  }) : super(key: key);
+  });
 
   @override
   State<AddEditRelativeScreen> createState() => _AddEditRelativeScreenState();
@@ -224,8 +224,9 @@ class _AddEditRelativeScreenState extends State<AddEditRelativeScreen> {
                           validator: (value) {
                             if (value!.isEmpty) return 'Age is required';
                             final age = int.tryParse(value);
-                            if (age == null || age <= 0)
+                            if (age == null || age <= 0) {
                               return 'Invalid age';
+                            }
                             return null;
                           },
                         ),
@@ -233,7 +234,7 @@ class _AddEditRelativeScreenState extends State<AddEditRelativeScreen> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          value: _selectedRelationship,
+                          initialValue: _selectedRelationship,
                           decoration: const InputDecoration(
                             labelText: 'Relationship',
                             prefixIcon: Icon(Icons.family_restroom_outlined),

@@ -33,7 +33,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   int _selectedMenuIndex = 1;
   late DatabaseReference _historyRef;
-  List<Map<String, dynamic>> _rawEvents = [];
+  final List<Map<String, dynamic>> _rawEvents = [];
   String? _selectedDeviceId;
 
   @override

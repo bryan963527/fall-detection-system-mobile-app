@@ -18,10 +18,10 @@ class Sidebar extends StatefulWidget {
   final Function(int) onItemSelected;
 
   const Sidebar({
-    Key? key,
+    super.key,
     required this.selectedIndex,
     required this.onItemSelected,
-  }) : super(key: key);
+  });
 
   @override
   State<Sidebar> createState() => _SidebarState();

@@ -11,7 +11,7 @@ import 'add_edit_relative_screen.dart';
 
 
 class RelativesScreen extends StatefulWidget {
-  const RelativesScreen({Key? key}) : super(key: key);
+  const RelativesScreen({super.key});
 
   @override
   State<RelativesScreen> createState() => _RelativesScreenState();
@@ -77,13 +77,13 @@ void dispose() {
                 return;
               }
 
-              final data = Map<String, dynamic>.from(snapshotValue as Map);
+              final data = Map<String, dynamic>.from(snapshotValue);
               final relativesList = <MapEntry<String, RelativeModel>>[];
 
               data.forEach((relativeId, relativeData) {
-                if (relativeData is Map && relativeId is String) {
+                if (relativeData is Map) {
                   try {
-                    final relative = RelativeModel.fromJson(relativeData as Map<dynamic, dynamic>);
+                    final relative = RelativeModel.fromJson(relativeData);
                     relativesList.add(MapEntry(relativeId, relative));
                   } catch (e) {
                     debugPrint('Error processing relative $relativeId: $e');
@@ -919,7 +919,7 @@ class _AddRelativeModalContentState extends State<_AddRelativeModalContent>
                         const SizedBox(width: 16),
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            value: _selectedRelationship,
+                            initialValue: _selectedRelationship,
                             decoration: InputDecoration(
                               labelText: 'Relationship',
                               prefixIcon: const Icon(

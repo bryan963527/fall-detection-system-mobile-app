@@ -10,7 +10,7 @@ import '../widgets/sidebar.dart';
 class ProfileScreen extends StatefulWidget {
   final String? userId;
 
-  const ProfileScreen({Key? key, this.userId}) : super(key: key);
+  const ProfileScreen({super.key, this.userId});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -679,7 +679,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _pushNotificationsEnabled = value;
                   });
                 },
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
               ),
             ],
           ),

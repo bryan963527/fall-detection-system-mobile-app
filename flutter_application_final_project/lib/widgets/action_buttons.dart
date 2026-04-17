@@ -9,13 +9,13 @@ class ActionButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   const ActionButton({
-    Key? key,
+    super.key,
     required this.icon,
     required this.label,
     required this.backgroundColor,
     required this.textColor,
     required this.onPressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -60,11 +60,11 @@ class ActionButtonsRow extends StatelessWidget {
   final VoidCallback onNotifyRelatives;
 
   const ActionButtonsRow({
-    Key? key,
+    super.key,
     required this.onEmergencyCall,
     required this.onCheckVitals,
     required this.onNotifyRelatives,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

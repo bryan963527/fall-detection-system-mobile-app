@@ -14,7 +14,7 @@ import 'relatives_screen.dart';
 import 'profile_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({Key? key}) : super(key: key);
+  const SettingsScreen({super.key});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -233,7 +233,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         style: const TextStyle(fontSize: 14, color: AppColors.textDark),
       ),
       value: value,
-      activeColor: AppColors.primary,
+      activeThumbColor: AppColors.primary,
       onChanged: onChanged,
     );
   }
@@ -274,10 +274,10 @@ class _HealthSettingsModalState extends State<HealthSettingsModal> {
     }
 
     try {
-      print('📖 Loading health data for user: ${_user!.uid}');
+      print('📖 Loading health data for user: ${_user.uid}');
       
       final data = await FirebaseService.getWithTimeout(
-        'users/${_user!.uid}/health_factors',
+        'users/${_user.uid}/health_factors',
         timeout: const Duration(seconds: 5),
       );
 
@@ -337,10 +337,10 @@ class _HealthSettingsModalState extends State<HealthSettingsModal> {
     setState(() => _isSaving = true);
 
     try {
-      print('✏️ Saving health data for user: ${_user!.uid}');
+      print('✏️ Saving health data for user: ${_user.uid}');
       
       await FirebaseService.writeWithTimeout(
-        'users/${_user!.uid}/health_factors',
+        'users/${_user.uid}/health_factors',
         {
           "osteoporosis": _hasOsteoporosis,
           "vertigo": _hasVertigo,

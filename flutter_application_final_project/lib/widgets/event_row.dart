@@ -7,10 +7,10 @@ class EventRow extends StatelessWidget {
   final VoidCallback onDetailsPressed;
 
   const EventRow({
-    Key? key,
+    super.key,
     required this.event,
     required this.onDetailsPressed,
-  }) : super(key: key);
+  });
 
   Color _getSeverityColor() {
     switch (event.severity) {

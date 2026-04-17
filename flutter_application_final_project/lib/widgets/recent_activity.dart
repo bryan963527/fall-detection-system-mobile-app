@@ -6,9 +6,9 @@ class RecentActivityCard extends StatelessWidget {
   final ActivityLog activity;
 
   const RecentActivityCard({
-    Key? key,
+    super.key,
     required this.activity,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -81,9 +81,9 @@ class RecentActivitySection extends StatelessWidget {
   final List<ActivityLog> activities;
 
   const RecentActivitySection({
-    Key? key,
+    super.key,
     required this.activities,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
